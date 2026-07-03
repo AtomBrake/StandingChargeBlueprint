@@ -54,10 +54,11 @@ blueprint:
             your currency (e.g. 0.6123 for 61.23p/day).
           selector:
             entity:
-              domain:
-                - input_number
-                - sensor
-                - number
+              filter:
+                domain:
+                  - input_number
+                  - sensor
+                  - number
         electricity_total_entity:
           name: Cumulative Total Entity
           description: >
@@ -65,7 +66,8 @@ blueprint:
             automation increments.
           selector:
             entity:
-              domain: input_number
+              filter:
+                domain: input_number
         electricity_last_accrual_entity:
           name: Last Accrual Date Entity
           description: >
@@ -74,7 +76,8 @@ blueprint:
             value when first created.
           selector:
             entity:
-              domain: input_datetime
+              filter:
+                domain: input_datetime
     gas:
       name: Gas
       icon: mdi:fire
@@ -91,10 +94,11 @@ blueprint:
           default: ""
           selector:
             entity:
-              domain:
-                - input_number
-                - sensor
-                - number
+              filter:
+                domain:
+                  - input_number
+                  - sensor
+                  - number
         gas_total_entity:
           name: Cumulative Total Entity
           description: >
@@ -103,7 +107,8 @@ blueprint:
           default: ""
           selector:
             entity:
-              domain: input_number
+              filter:
+                domain: input_number
         gas_last_accrual_entity:
           name: Last Accrual Date Entity
           description: >
@@ -112,7 +117,8 @@ blueprint:
           default: ""
           selector:
             entity:
-              domain: input_datetime
+              filter:
+                domain: input_datetime
     reset_time:
       name: Accrual Time
       description: >
@@ -124,7 +130,7 @@ blueprint:
 
 mode: single
 
-trigger:
+triggers:
   - trigger: time
     at: !input reset_time
   - trigger: homeassistant
@@ -139,7 +145,7 @@ variables:
       total_entity: !input gas_total_entity
       last_accrual_entity: !input gas_last_accrual_entity
 
-action:
+actions:
   - repeat:
       for_each: "{{ fuels }}"
       sequence:
@@ -162,13 +168,13 @@ action:
                 - condition: template
                   value_template: "{{ days_elapsed | int(0) >= 1 }}"
               then:
-                - service: input_number.set_value
+                - action: input_number.set_value
                   target:
                     entity_id: "{{ total_entity }}"
                   data:
                     value: >-
                       {{ ((states(total_entity) | float(0)) + (days_elapsed | int(0)) * (states(rate_entity) | float(0))) | round(4) }}
-                - service: input_datetime.set_datetime
+                - action: input_datetime.set_datetime
                   target:
                     entity_id: "{{ last_accrual_entity }}"
                   data:
