@@ -10,19 +10,31 @@ blueprint:
     for gas).
 
 
-    Requires two `input_number` helpers to already exist before you use this
-    blueprint:
+    Requires three helpers to already exist before you use this blueprint:
 
-    1. One holding **today's standing charge rate**, in your currency
-    (e.g. `0.6123` for 61.23p/day). You update this by hand when your tariff
-    changes, or point it at a sensor from your energy supplier's integration
-    if it already exposes the standing charge.
+    1. An `input_number` holding **today's standing charge rate**, in your
+    currency (e.g. `0.6123` for 61.23p/day). You update this by hand when
+    your tariff changes, or point it at a sensor from your energy supplier's
+    integration if it already exposes the standing charge.
 
-    2. One holding the **running cumulative total**. This automation adds the
-    rate to it once a day. You then wrap this helper in a template sensor
-    (see the repository README) and register that sensor with the Energy
-    Dashboard as the entity that "tracks the total cost" for a zero-usage
-    source.
+    2. An `input_number` holding the **running cumulative total**. This
+    automation adds the rate to it. You then wrap this helper in a template
+    sensor (see the repository README) and register that sensor with the
+    Energy Dashboard as the entity that "tracks the total cost" for a
+    zero-usage source.
+
+    3. An `input_datetime` (date only) that remembers the **last date this
+    successfully ran**. This is what lets it catch up on any days it missed
+    while Home Assistant was offline, instead of silently skipping them.
+
+
+    As well as running daily at the configured time, this also runs once
+    when Home Assistant starts up. On either trigger, it compares today's
+    date to the last recorded accrual date and adds the rate once for every
+    day in between — so a restart, update, or outage that spans the accrual
+    time no longer loses that day's charge. A multi-day gap is backfilled
+    using the *current* rate for every missed day, which may be slightly
+    off if your rate changed mid-outage.
 
 
     See the repository README for full setup steps, including the template
@@ -50,13 +62,21 @@ blueprint:
       selector:
         entity:
           domain: input_number
+    last_accrual_entity:
+      name: Last Accrual Date Entity
+      description: >
+        An input_datetime helper (Date only, no time) that stores the last
+        date this automation successfully accrued the charge. Used purely
+        for catch-up after Home Assistant has been offline - leave it at
+        its default value when first created.
+      selector:
+        entity:
+          domain: input_datetime
     reset_time:
       name: Accrual Time
       description: >
         Time of day the standing charge is added to the running total.
-        Defaults to midnight. If Home Assistant is not running at this
-        exact time on a given day, that day's charge will be missed (there
-        is no catch-up logic), so pick a time you're confident HA will be up.
+        Defaults to midnight.
       default: "00:00:00"
       selector:
         time: {}
@@ -66,16 +86,31 @@ mode: single
 trigger:
   - trigger: time
     at: !input reset_time
+  - trigger: homeassistant
+    event: start
 
-condition: []
+variables:
+  rate_entity: !input rate_entity
+  total_entity: !input total_entity
+  last_accrual_entity: !input last_accrual_entity
+  last_accrual_state: "{{ states(last_accrual_entity) }}"
+  days_elapsed: >-
+    {{ 1 if last_accrual_state in ['unknown', 'unavailable', 'none', ''] else
+       ([(now().date() - (last_accrual_state | as_datetime).date()).days, 0] | max) }}
+
+condition:
+  - condition: template
+    value_template: "{{ days_elapsed | int(0) >= 1 }}"
 
 action:
-  - variables:
-      rate_entity: !input rate_entity
-      total_entity: !input total_entity
   - service: input_number.set_value
     target:
       entity_id: !input total_entity
     data:
       value: >-
-        {{ ((states(total_entity) | float(0)) + (states(rate_entity) | float(0))) | round(4) }}
+        {{ ((states(total_entity) | float(0)) + (days_elapsed | int(0)) * (states(rate_entity) | float(0))) | round(4) }}
+  - service: input_datetime.set_datetime
+    target:
+      entity_id: !input last_accrual_entity
+    data:
+      date: "{{ now().strftime('%Y-%m-%d') }}"
