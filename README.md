@@ -190,6 +190,45 @@ include both usage and standing charge.
   your rate changed partway through the outage. Capped at 7 days as a
   safety limit, so a corrupted or badly-set date can't cause a runaway
   backfill.
+- **A backfilled gap lands as a single lump sum on the day it's caught
+  up, not spread across the missed days.** E.g. if Home Assistant was
+  offline over the 1st–3rd and the automation catches up on the 3rd, the
+  Energy Dashboard's cost breakdown shows all three days' charge on the
+  3rd, not one day's charge on each of the 1st, 2nd and 3rd. This isn't
+  fixable from within the blueprint: an automation can only ever write an
+  entity's *current* state, and Home Assistant's recorder always
+  timestamps a state change at the moment it's written. Spreading a
+  backfilled amount across its correct historical days requires editing
+  Home Assistant's long-term statistics directly, and that's only
+  reachable through the Developer Tools UI (or a custom integration) —
+  the underlying `import_statistics`/`adjust_sum_statistics` calls are
+  WebSocket-API-only commands, not services an automation can call. If a
+  gap bothers you enough to fix by hand: **Developer Tools → Statistics**,
+  find the fuel's `_total` template sensor, open its graph, and manually
+  edit/redistribute the affected days' values. This is a manual, one-off
+  correction to the historical graph only — it doesn't touch the
+  `input_number` the automation actually reads and writes, so there's no
+  need to pause or disable the automation while you do it, and nothing
+  you do there will be double-counted on the next run.
+- **The running total has no independent backup — if its `input_number`
+  is ever wiped (helper deleted and recreated, a botched restore, an
+  accidental edit in Developer Tools → States), the automation has no way
+  to know and will silently carry on accruing from the new value.** The
+  automation does include one safeguard: if a fuel's total ever reads
+  `0` on a day when its last-accrual date shows the automation has
+  already been running, a persistent notification fires telling you to
+  check for the last correct value. That same check will also fire once,
+  harmlessly, on a genuinely first-ever run if the last-accrual Date
+  helper's initial value was left at today instead of yesterday — treat
+  that as a nudge to fix the setup, not a real fault. It won't catch a
+  reset that happens to land during an active multi-day catch-up gap.
+  Beyond that one check, there's no automatic recovery: the running total
+  itself isn't backed up anywhere. What *does* survive a wiped helper is
+  the Energy Dashboard's own long-term statistics for the `_total`
+  template sensor (Developer Tools → Statistics) — those persist
+  independently of the input_number's live state, so if a reset ever
+  happens, read the last-known-good total from there and set the
+  `input_number` back to it by hand.
 - The currency you set on the template sensor should match your Home
   Assistant instance's configured currency (Settings → General).
 - If you're on a variable/tracker tariff where the standing charge changes

@@ -40,6 +40,12 @@ blueprint:
     corrupted or mis-set date.
 
 
+    Also raises a persistent notification if a fuel's running total ever
+    reads 0 while its last-accrual date shows the automation has already
+    been running - a likely sign the total's helper was cleared, deleted
+    and recreated, or edited by hand.
+
+
     See the repository README for full setup steps, including the template
     sensors and Energy Dashboard configuration this blueprint depends on.
   domain: automation
@@ -172,6 +178,30 @@ actions:
                 days_elapsed: >-
                   {{ [ (1 if last_accrual_state in ['unknown', 'unavailable', 'none', ''] else
                         ([(now().date() - (last_accrual_state | as_datetime).date()).days, 0] | max)), 7 ] | min }}
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ days_elapsed | int(0) == 0
+                       and last_accrual_state not in ['unknown', 'unavailable', 'none', '']
+                       and (states(total_entity) | float(-1)) == 0 }}
+              then:
+                - action: persistent_notification.create
+                  data:
+                    notification_id: "standing_charge_reset_{{ total_entity }}"
+                    title: Standing Charge total looks reset
+                    message: >-
+                      {{ total_entity }} currently reads 0, but {{ last_accrual_entity }}
+                      ({{ last_accrual_state }}) shows this automation has
+                      already been running for this fuel. That combination
+                      usually means the total's helper was cleared,
+                      deleted and recreated, or edited by hand - or, if
+                      this really is the first run, that the Date
+                      helper's initial value was left at today instead of
+                      being set to yesterday (see the blueprint
+                      description). Check Developer Tools → Statistics
+                      for this fuel's total sensor to find the last
+                      correct running total, then set {{ total_entity }}
+                      back to it manually.
             - if:
                 - condition: template
                   value_template: "{{ days_elapsed | int(0) >= 1 }}"
