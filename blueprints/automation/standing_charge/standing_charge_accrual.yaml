@@ -38,7 +38,7 @@ blueprint:
     See the repository README for full setup steps, including the template
     sensors and Energy Dashboard configuration this blueprint depends on.
   domain: automation
-  source_url: https://github.com/AtomBrake/StandingChargeBlueprint/blob/main/blueprints/automation/standing_charge/standing_charge_accrual.yaml
+  source_url: https://github.com/AtomBrake/HA-Standing-Charge-Blueprint/blob/main/blueprints/automation/standing_charge/standing_charge_accrual.yaml
   min_version: "2024.6.0"
   input:
     electricity:

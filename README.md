@@ -13,7 +13,7 @@ get their own rate and running total, so they can differ (e.g. different
 tariffs or renewal dates) even though a single automation handles both. If
 you're electricity-only, just leave the gas fields blank.
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FAtomBrake%2FStandingChargeBlueprint%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fstanding_charge%2Fstanding_charge_accrual.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FAtomBrake%2FHA-Standing-Charge-Blueprint%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fstanding_charge%2Fstanding_charge_accrual.yaml)
 
 ## How it works
 
@@ -109,7 +109,7 @@ Click the import badge above, or in Home Assistant go to Settings →
 Automations & Scenes → Blueprints → Import Blueprint, and paste in:
 
 ```
-https://github.com/AtomBrake/StandingChargeBlueprint/blob/main/blueprints/automation/standing_charge/standing_charge_accrual.yaml
+https://github.com/AtomBrake/HA-Standing-Charge-Blueprint/blob/main/blueprints/automation/standing_charge/standing_charge_accrual.yaml
 ```
 
 Create **one** automation from the blueprint — it has an Electricity
