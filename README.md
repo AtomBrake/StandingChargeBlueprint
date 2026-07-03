@@ -126,13 +126,47 @@ include both usage and standing charge.
   daily, update the rate `input_number` (or point it at your supplier
   integration's sensor) before the accrual time each day.
 
-## Advanced
+## Advanced: using a supplier integration for the rate
 
-If your energy supplier's Home Assistant integration (e.g. Octopus Energy)
-already exposes a sensor for today's standing charge, you can point the
-blueprint's **Standing Charge Rate Entity** directly at that sensor instead
-of a manually maintained `input_number` — skip creating the `_rate` helper
-and use the supplier's sensor entity ID instead.
+The blueprint's **Standing Charge Rate Entity** input accepts any
+`input_number`, `number`, or `sensor` entity — it just reads that entity's
+state as a number, so it has no idea which supplier (if any) it came from.
+If your supplier's integration already exposes the standing charge as its
+own sensor state, just point the input at it directly and skip creating
+the `_rate` helper.
+
+Some integrations, however, only expose the standing charge as an
+**attribute** on a cost sensor, not as its own entity — the blueprint can't
+read attributes directly, only entity states. In that case, add a one-line
+template sensor to pull the attribute out into its own state, and point
+the blueprint at that instead. For example, the
+[Octopus Energy integration](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy)
+reports the standing charge as a `standing_charge` attribute on its
+`..._current_accumulative_cost` / `..._previous_accumulative_cost` sensors
+(find your exact entity id under Developer Tools → States, filtering for
+`accumulative_cost` — it includes your meter's MPAN/serial number):
+
+```yaml
+template:
+  - sensor:
+      - name: "Electricity Standing Charge Rate"
+        unique_id: electricity_standing_charge_rate
+        unit_of_measurement: "GBP"
+        device_class: monetary
+        state: >-
+          {{ state_attr('sensor.octopus_energy_electricity_YOUR_SERIAL_YOUR_MPAN_current_accumulative_cost', 'standing_charge') | float(0) }}
+```
+
+Use `previous_accumulative_cost` instead if you don't have a Home
+Mini/Pro (that sensor only updates for the *previous* day, so the rate
+will lag by a day — fine in practice since standing charges rarely change
+daily, but worth knowing). Point the blueprint's rate entity at this
+template sensor instead of an `input_number`, and you no longer need to
+maintain the rate by hand.
+
+This same attribute-extraction pattern works for any supplier integration
+that buries the rate in an attribute rather than a dedicated entity — the
+blueprint itself never needs to know or care.
 
 ## License
 
