@@ -23,7 +23,10 @@ blueprint:
     3. An `input_datetime` (date only) that remembers the **last date this
     successfully ran** for that fuel. This is what lets it catch up on any
     days it missed while Home Assistant was offline, instead of silently
-    skipping them.
+    skipping them. **Set its initial value to yesterday's date, not
+    today** - Home Assistant's Date helper defaults new entities to
+    today, and if left there the first day's charge is silently skipped
+    (today looks already-accounted-for) until the day after setup.
 
 
     As well as running daily at the configured time, this also runs once
@@ -32,7 +35,9 @@ blueprint:
     adds the rate once for every day in between - so a restart, update, or
     outage that spans the accrual time no longer loses that day's charge.
     A multi-day gap is backfilled using the *current* rate for every missed
-    day, which may be slightly off if your rate changed mid-outage.
+    day, which may be slightly off if your rate changed mid-outage, and is
+    capped at 60 days as a safety limit against runaway backfills from a
+    corrupted or mis-set date.
 
 
     See the repository README for full setup steps, including the template
@@ -72,8 +77,9 @@ blueprint:
           name: Last Accrual Date Entity
           description: >
             An input_datetime helper (Date only, no time) that stores the
-            last date this ran for electricity. Leave it at its default
-            value when first created.
+            last date this ran for electricity. Set its initial value to
+            YESTERDAY, not today - see the blueprint description above
+            for why.
           selector:
             entity:
               filter:
@@ -113,7 +119,9 @@ blueprint:
           name: Last Accrual Date Entity
           description: >
             An input_datetime helper (Date only, no time) that stores the
-            last date this ran for gas. Leave blank if you don't have gas.
+            last date this ran for gas. Set its initial value to
+            YESTERDAY, not today, for the same reason as the electricity
+            one above. Leave this whole field blank if you don't have gas.
           default: ""
           selector:
             entity:
@@ -162,8 +170,8 @@ actions:
                 last_accrual_entity: "{{ repeat.item.last_accrual_entity }}"
                 last_accrual_state: "{{ states(repeat.item.last_accrual_entity) }}"
                 days_elapsed: >-
-                  {{ 1 if last_accrual_state in ['unknown', 'unavailable', 'none', ''] else
-                     ([(now().date() - (last_accrual_state | as_datetime).date()).days, 0] | max) }}
+                  {{ [ (1 if last_accrual_state in ['unknown', 'unavailable', 'none', ''] else
+                        ([(now().date() - (last_accrual_state | as_datetime).date()).days, 0] | max)), 60 ] | min }}
             - if:
                 - condition: template
                   value_template: "{{ days_elapsed | int(0) >= 1 }}"

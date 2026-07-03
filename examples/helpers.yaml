@@ -27,16 +27,28 @@
 # =====================================================================
 
 # input_datetime: catch-up bookkeeping for the blueprint - stores the
-# last date it successfully ran per fuel. Leave the initial value unset.
+# last date it successfully ran per fuel.
+#
+# IMPORTANT: set `initial:` to YESTERDAY's date (relative to whenever you
+# actually deploy this), not today, and not left out entirely. Home
+# Assistant has no way to leave a Date helper truly blank on creation -
+# omitting `initial:` here still results in it defaulting to today's
+# date the first time it's loaded, same as the UI helper creation dialog
+# does. If it's left at today, the blueprint thinks today's charge is
+# already accounted for and silently skips it until the day after setup.
+# Replace the placeholder dates below with the real date before merging
+# this into your config.
 input_datetime:
   electricity_standing_charge_last_accrual:
     name: Electricity Standing Charge Last Accrual
     has_date: true
     has_time: false
+    initial: "2026-07-02" # <-- replace with yesterday's actual date
   gas_standing_charge_last_accrual:
     name: Gas Standing Charge Last Accrual
     has_date: true
     has_time: false
+    initial: "2026-07-02" # <-- replace with yesterday's actual date
 
 # template: two sensors per fuel - a read-only "Total" sensor tagged
 # device_class: monetary that mirrors the input_number "_accrued" total

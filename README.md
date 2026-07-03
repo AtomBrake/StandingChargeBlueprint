@@ -68,7 +68,7 @@ Dashboard:
 | Helper | Purpose | Suggested settings |
 |---|---|---|
 | `input_number.electricity_standing_charge_accrued` | Running total the blueprint writes to directly | Min `0`, Max `100000`, Step `0.0001` |
-| `input_datetime.electricity_standing_charge_last_accrual` (type: **Date**, no time component) | Last date the blueprint successfully ran — used only for catch-up after Home Assistant has been offline. Leave it at its default value. |
+| `input_datetime.electricity_standing_charge_last_accrual` (type: **Date**, no time component) | Last date the blueprint successfully ran — used only for catch-up after Home Assistant has been offline. **Set its initial value to yesterday's date, not today** — the creation dialog defaults to today, but leaving it there makes the blueprint think today's charge is already accounted for, silently skipping it until the day after setup. |
 
 **For the rate itself**, most UK energy integrations (Octopus Energy and
 others) already expose it somewhere, so you likely don't need to create
@@ -187,7 +187,9 @@ include both usage and standing charge.
   all of them at once — so a restart, update, or outage spanning the
   accrual time no longer loses that day's charge. A backfilled gap uses
   the *current* rate for every missed day, which may be slightly off if
-  your rate changed partway through the outage.
+  your rate changed partway through the outage. Capped at 60 days as a
+  safety limit, so a corrupted or badly-set date can't cause a runaway
+  backfill.
 - The currency you set on the template sensor should match your Home
   Assistant instance's configured currency (Settings → General).
 - If you're on a variable/tracker tariff where the standing charge changes
