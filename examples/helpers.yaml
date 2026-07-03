@@ -1,55 +1,33 @@
 # Example YAML alternative to creating everything below as UI Helpers.
-# Merge the relevant top-level keys (`input_number:`, `input_datetime:`,
-# `template:`) into configuration.yaml (or a packages file). The
-# input_number/input_datetime keys need a full Home Assistant restart to
-# take effect; template changes just need Developer Tools > YAML > Reload
-# Template Entities. Duplicate and adjust per fuel — this shows both
-# electricity and gas as an example.
+# Merge the top-level keys (`input_datetime:`, `template:`,
+# `input_number:`) into configuration.yaml (or a packages file).
+# input_number/input_datetime need a full Home Assistant restart to take
+# effect; template changes just need Developer Tools > YAML > Reload
+# Template Entities. Shown for both electricity and gas - delete the
+# gas_* entries if you're electricity-only.
 #
-# This is THREE separate kinds of entity, all required, all different:
-#   1. input_number "_accrued" - the running total. This is what the
-#      blueprint automation actually writes to.
-#   2. input_datetime "_last_accrual" - catch-up bookkeeping for the
-#      blueprint. Leave its initial value unset.
-#   3. template sensor "_total" - read-only, just mirrors the
-#      input_number above but tagged with device_class: monetary so the
-#      Energy Dashboard will accept it as a cost-tracking entity. This is
-#      NOT the same entity as the input_number it reads from, despite the
-#      similar name (_accrued vs _total) - don't confuse them when
-#      configuring the blueprint or the Energy Dashboard.
+# This file is split into REQUIRED and OPTIONAL. Everything in REQUIRED
+# is needed no matter what. OPTIONAL is only needed if you don't already
+# have an entity that reports today's standing charge - many energy
+# supplier integrations expose this directly (see the README's "Using a
+# supplier integration for the rate" section - Octopus Energy, for
+# example, exposes sensor.octopus_energy_electricity_..._current_standing_charge).
+# If you have one of those, skip the OPTIONAL section entirely and point
+# the blueprint's rate field at that sensor instead.
 #
-# The optional "_rate" input_number helpers below hold today's standing
-# charge for you to update by hand. Skip creating them entirely if your
-# energy supplier's integration already exposes the rate as a sensor (see
-# the README's "Using a supplier integration for the rate" section) -
-# point the blueprint's rate field at that sensor instead.
+# One YAML wrinkle: `input_number:` can only appear once per config, so
+# the OPTIONAL entries below can't be their own separate top-level
+# section - they have to live inside the same input_number: block as the
+# REQUIRED ones. That's why input_number: is last in this file and has
+# its own REQUIRED/OPTIONAL divider inside it, rather than the whole
+# OPTIONAL group being a clean standalone block like the others.
 
-input_number:
-  electricity_standing_charge_accrued:
-    name: Electricity Standing Charge Accrued
-    min: 0
-    max: 100000
-    step: 0.0001
-    unit_of_measurement: "GBP"
-  electricity_standing_charge_rate: # optional - omit if using a supplier-exposed sensor instead
-    name: Electricity Standing Charge Rate
-    min: 0
-    max: 10
-    step: 0.0001
-    unit_of_measurement: "GBP"
-  gas_standing_charge_accrued:
-    name: Gas Standing Charge Accrued
-    min: 0
-    max: 100000
-    step: 0.0001
-    unit_of_measurement: "GBP"
-  gas_standing_charge_rate: # optional - omit if using a supplier-exposed sensor instead
-    name: Gas Standing Charge Rate
-    min: 0
-    max: 10
-    step: 0.0001
-    unit_of_measurement: "GBP"
+# =====================================================================
+# REQUIRED
+# =====================================================================
 
+# input_datetime: catch-up bookkeeping for the blueprint - stores the
+# last date it successfully ran per fuel. Leave the initial value unset.
 input_datetime:
   electricity_standing_charge_last_accrual:
     name: Electricity Standing Charge Last Accrual
@@ -60,6 +38,14 @@ input_datetime:
     has_date: true
     has_time: false
 
+# template: two sensors per fuel - a read-only "Total" sensor tagged
+# device_class: monetary that mirrors the input_number "_accrued" total
+# below (this is what you register with the Energy Dashboard as
+# "entity tracking total cost"), and a dummy "Usage" sensor that always
+# reports 0 (the zero-usage source the cost is attached to). These are
+# NOT the same entities as the input_number they read from, despite
+# similar names (_total vs _accrued) - don't confuse them when
+# configuring the blueprint or the Energy Dashboard.
 template:
   - sensor:
       - name: "Electricity Standing Charge Total"
@@ -89,3 +75,39 @@ template:
         device_class: gas
         state_class: total
         state: "0"
+
+input_number:
+  # --- REQUIRED ---
+  # The running total the blueprint automation writes to directly. This
+  # is the entity you point the blueprint's "Cumulative Total Entity"
+  # field at.
+  electricity_standing_charge_accrued:
+    name: Electricity Standing Charge Accrued
+    min: 0
+    max: 100000
+    step: 0.0001
+    unit_of_measurement: "GBP"
+  gas_standing_charge_accrued:
+    name: Gas Standing Charge Accrued
+    min: 0
+    max: 100000
+    step: 0.0001
+    unit_of_measurement: "GBP"
+
+  # --- OPTIONAL ---
+  # Only needed if you don't already have an entity exposing today's
+  # standing charge - see the note at the top of this file. If you're
+  # skipping these, don't add them here at all; just point the
+  # blueprint's rate field at your supplier's sensor instead.
+  electricity_standing_charge_rate:
+    name: Electricity Standing Charge Rate
+    min: 0
+    max: 10
+    step: 0.0001
+    unit_of_measurement: "GBP"
+  gas_standing_charge_rate:
+    name: Gas Standing Charge Rate
+    min: 0
+    max: 10
+    step: 0.0001
+    unit_of_measurement: "GBP"

@@ -49,10 +49,12 @@ and gas together.
 
 Prefer YAML over clicking through the Helpers UI? Steps 1 and 2 (all the
 helpers below, both fuels) are together in
-[`examples/helpers.yaml`](examples/helpers.yaml), ready to merge into
-`configuration.yaml` — the `input_number:`/`input_datetime:` keys need a
-restart to take effect, the `template:` sensors just need Developer Tools
-→ YAML → Reload Template Entities.
+[`examples/helpers.yaml`](examples/helpers.yaml), split into a REQUIRED
+section (needed regardless) and an OPTIONAL section (only needed if you
+don't already have a supplier-exposed rate entity — see below). Ready to
+merge into `configuration.yaml` — the `input_number:`/`input_datetime:`
+keys need a restart to take effect, the `template:` sensors just need
+Developer Tools → YAML → Reload Template Entities.
 
 Settings → Devices & Services → Helpers → **+ Create Helper**.
 
