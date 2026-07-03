@@ -140,7 +140,12 @@ Settings → Dashboards → Energy → Electricity grid → **Add Consumption**:
 2. Untick "Use a static price" / "Use an entity with the current price".
 3. Enable **"Use an entity tracking the total costs"** and select
    `sensor.electricity_standing_charge_total`.
-4. Save.
+4. On Home Assistant 2026.6 and later, this step also lets you set a
+   custom display name for the source — independent of the entity's own
+   name — so it's worth labelling it something clear like "Standing
+   Charge" here rather than relying on whatever the dummy sensor happens
+   to be called.
+5. Save.
 
 If you have a gas supply, repeat under "Gas consumption" for the gas
 sensors.
