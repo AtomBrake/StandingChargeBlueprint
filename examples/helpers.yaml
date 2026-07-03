@@ -1,0 +1,91 @@
+# Example YAML alternative to creating everything below as UI Helpers.
+# Merge the relevant top-level keys (`input_number:`, `input_datetime:`,
+# `template:`) into configuration.yaml (or a packages file). The
+# input_number/input_datetime keys need a full Home Assistant restart to
+# take effect; template changes just need Developer Tools > YAML > Reload
+# Template Entities. Duplicate and adjust per fuel — this shows both
+# electricity and gas as an example.
+#
+# This is THREE separate kinds of entity, all required, all different:
+#   1. input_number "_accrued" - the running total. This is what the
+#      blueprint automation actually writes to.
+#   2. input_datetime "_last_accrual" - catch-up bookkeeping for the
+#      blueprint. Leave its initial value unset.
+#   3. template sensor "_total" - read-only, just mirrors the
+#      input_number above but tagged with device_class: monetary so the
+#      Energy Dashboard will accept it as a cost-tracking entity. This is
+#      NOT the same entity as the input_number it reads from, despite the
+#      similar name (_accrued vs _total) - don't confuse them when
+#      configuring the blueprint or the Energy Dashboard.
+#
+# The optional "_rate" input_number helpers below hold today's standing
+# charge for you to update by hand. Skip creating them entirely if your
+# energy supplier's integration already exposes the rate as a sensor (see
+# the README's "Using a supplier integration for the rate" section) -
+# point the blueprint's rate field at that sensor instead.
+
+input_number:
+  electricity_standing_charge_accrued:
+    name: Electricity Standing Charge Accrued
+    min: 0
+    max: 100000
+    step: 0.0001
+    unit_of_measurement: "GBP"
+  electricity_standing_charge_rate: # optional - omit if using a supplier-exposed sensor instead
+    name: Electricity Standing Charge Rate
+    min: 0
+    max: 10
+    step: 0.0001
+    unit_of_measurement: "GBP"
+  gas_standing_charge_accrued:
+    name: Gas Standing Charge Accrued
+    min: 0
+    max: 100000
+    step: 0.0001
+    unit_of_measurement: "GBP"
+  gas_standing_charge_rate: # optional - omit if using a supplier-exposed sensor instead
+    name: Gas Standing Charge Rate
+    min: 0
+    max: 10
+    step: 0.0001
+    unit_of_measurement: "GBP"
+
+input_datetime:
+  electricity_standing_charge_last_accrual:
+    name: Electricity Standing Charge Last Accrual
+    has_date: true
+    has_time: false
+  gas_standing_charge_last_accrual:
+    name: Gas Standing Charge Last Accrual
+    has_date: true
+    has_time: false
+
+template:
+  - sensor:
+      - name: "Electricity Standing Charge Total"
+        unique_id: electricity_standing_charge_total_cost
+        unit_of_measurement: "GBP"
+        device_class: monetary
+        state_class: total
+        state: "{{ states('input_number.electricity_standing_charge_accrued') | float(0) }}"
+
+      - name: "Electricity Standing Charge Usage"
+        unique_id: electricity_standing_charge_dummy_usage
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "0"
+
+      - name: "Gas Standing Charge Total"
+        unique_id: gas_standing_charge_total_cost
+        unit_of_measurement: "GBP"
+        device_class: monetary
+        state_class: total
+        state: "{{ states('input_number.gas_standing_charge_accrued') | float(0) }}"
+
+      - name: "Gas Standing Charge Usage"
+        unique_id: gas_standing_charge_dummy_usage
+        unit_of_measurement: "m³"
+        device_class: gas
+        state_class: total
+        state: "0"

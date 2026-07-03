@@ -47,6 +47,13 @@ and gas together.
 
 ### 1. Create the helpers
 
+Prefer YAML over clicking through the Helpers UI? Steps 1 and 2 (all the
+helpers below, both fuels) are together in
+[`examples/helpers.yaml`](examples/helpers.yaml), ready to merge into
+`configuration.yaml` — the `input_number:`/`input_datetime:` keys need a
+restart to take effect, the `template:` sensors just need Developer Tools
+→ YAML → Reload Template Entities.
+
 Settings → Devices & Services → Helpers → **+ Create Helper**.
 
 You need two of these regardless of where your rate comes from — a Number
@@ -105,9 +112,6 @@ to attach a cost to, so this always reports 0:
 
 (For gas, use `m³` and device class `Gas` for the dummy sensor, or `kWh` /
 `Energy` if your real gas source is already in kWh.)
-
-Prefer YAML? See [`examples/template_helpers.yaml`](examples/template_helpers.yaml)
-for both sensors, both fuels, ready to drop into `configuration.yaml`.
 
 ### 3. Import and configure the blueprint
 
