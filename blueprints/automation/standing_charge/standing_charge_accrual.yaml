@@ -1,0 +1,81 @@
+blueprint:
+  name: Daily Standing Charge Accrual
+  description: >
+    Adds a daily standing charge (e.g. electricity or gas connection fee) onto
+    a running total, so it shows up as an extra cost-only source on the Home
+    Assistant Energy Dashboard alongside your usage costs.
+
+
+    Instantiate this blueprint **once per fuel** (once for electricity, once
+    for gas).
+
+
+    Requires two `input_number` helpers to already exist before you use this
+    blueprint:
+
+    1. One holding **today's standing charge rate**, in your currency
+    (e.g. `0.6123` for 61.23p/day). You update this by hand when your tariff
+    changes, or point it at a sensor from your energy supplier's integration
+    if it already exposes the standing charge.
+
+    2. One holding the **running cumulative total**. This automation adds the
+    rate to it once a day. You then wrap this helper in a template sensor
+    (see the repository README) and register that sensor with the Energy
+    Dashboard as the entity that "tracks the total cost" for a zero-usage
+    source.
+
+
+    See the repository README for full setup steps, including the template
+    sensors and Energy Dashboard configuration this blueprint depends on.
+  domain: automation
+  source_url: https://github.com/AtomBrake/StandingChargeBlueprint/blob/main/blueprints/automation/standing_charge/standing_charge_accrual.yaml
+  input:
+    rate_entity:
+      name: Standing Charge Rate Entity
+      description: >
+        Entity holding today's daily standing charge, in your currency
+        (e.g. 0.6123 for 61.23p/day).
+      selector:
+        entity:
+          domain:
+            - input_number
+            - sensor
+            - number
+    total_entity:
+      name: Cumulative Total Entity
+      description: >
+        The input_number helper that stores the running total this
+        automation increments. This is the helper you wrap in a template
+        sensor and register with the Energy Dashboard.
+      selector:
+        entity:
+          domain: input_number
+    reset_time:
+      name: Accrual Time
+      description: >
+        Time of day the standing charge is added to the running total.
+        Defaults to midnight. If Home Assistant is not running at this
+        exact time on a given day, that day's charge will be missed (there
+        is no catch-up logic), so pick a time you're confident HA will be up.
+      default: "00:00:00"
+      selector:
+        time: {}
+
+mode: single
+
+trigger:
+  - trigger: time
+    at: !input reset_time
+
+condition: []
+
+action:
+  - variables:
+      rate_entity: !input rate_entity
+      total_entity: !input total_entity
+  - service: input_number.set_value
+    target:
+      entity_id: !input total_entity
+    data:
+      value: >-
+        {{ ((states(total_entity) | float(0)) + (states(rate_entity) | float(0))) | round(4) }}

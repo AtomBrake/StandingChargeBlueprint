@@ -1,0 +1,51 @@
+# Example YAML alternative to creating the sensors below as UI Helpers
+# (Settings > Devices & Services > Helpers > + Create Helper > Template).
+#
+# If you'd rather manage these in YAML, merge this under a `template:`
+# section in configuration.yaml (or a packages file) and restart / reload
+# templates. Duplicate and adjust per fuel — this shows both electricity
+# and gas as an example.
+#
+# Each fuel needs:
+#   - a "total" sensor (device_class: monetary) that mirrors your
+#     input_number.*_standing_charge_total helper - this is what you
+#     register with the Energy Dashboard as "entity tracking total cost"
+#   - a "dummy usage" sensor that always reports 0 - this is what you
+#     register as the zero-usage source the cost is attached to
+#
+# Both input_number helpers referenced below (`..._standing_charge_rate`
+# and `..._standing_charge_total`) must be created first (also via
+# Settings > Devices & Services > Helpers > + Create Helper > Number).
+# The blueprint automation only updates `..._standing_charge_total`; you
+# maintain `..._standing_charge_rate` by hand (or point it at a sensor
+# from your supplier's integration).
+
+template:
+  - sensor:
+      - name: "Electricity Standing Charge Total"
+        unique_id: electricity_standing_charge_total_cost
+        unit_of_measurement: "GBP"
+        device_class: monetary
+        state_class: total
+        state: "{{ states('input_number.electricity_standing_charge_total') | float(0) }}"
+
+      - name: "Electricity Standing Charge Usage"
+        unique_id: electricity_standing_charge_dummy_usage
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "0"
+
+      - name: "Gas Standing Charge Total"
+        unique_id: gas_standing_charge_total_cost
+        unit_of_measurement: "GBP"
+        device_class: monetary
+        state_class: total
+        state: "{{ states('input_number.gas_standing_charge_total') | float(0) }}"
+
+      - name: "Gas Standing Charge Usage"
+        unique_id: gas_standing_charge_dummy_usage
+        unit_of_measurement: "m³"
+        device_class: gas
+        state_class: total
+        state: "0"
