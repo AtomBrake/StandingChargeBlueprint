@@ -164,7 +164,10 @@ Settings → Dashboards → Energy → Electricity grid → **Add Consumption**:
 5. Save.
 
 If you have a gas supply, repeat under "Gas consumption" for the gas
-sensors.
+sensors. The gas dialog also shows a **"Gas flow rate"** field — that's
+an unrelated, separate feature for real-time flow monitoring, not
+billing. It's optional (the Save button doesn't require it); since the
+dummy usage sensor has no real flow rate to report, just leave it blank.
 
 Your Energy Dashboard totals, cost breakdown, and statistics will now
 include both usage and standing charge.
